@@ -19,29 +19,28 @@ const int shape_array[7][4] = {
 class Shape : public Node
 {
 public:
-	enum Dir
-	{
-		up,
-		right,
-		down,
-		left
-	};
-
 	static Shape* create(int type);
 	virtual bool init(int type);
 
-	void setBlocks(int type);
+	void setRow(int row) { this->row = row; }
+	int getRow() { return row; }
+	void setCol(int col) { this->col = col; }
+	int getCol() { return col; }
+
+	void setBlocks();
 	Vector<Block*> getBlocks() { return this->blocks; }
 
-	void setRow(int row) { this->row = row; }
-	void setCol(int col) { this->col = col; }
+	void dropDown();
+	void moveLeft();
+	void moveRight();
 
-	void moveDown();
+	void roateShape();
 
 private:
 	int row;
 	int col;
-	Dir dir;
+	int type;
+	int dir;
 	Vector<Block*> blocks;
 };
 

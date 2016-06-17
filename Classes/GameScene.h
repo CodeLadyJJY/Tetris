@@ -3,6 +3,7 @@
 
 #include "cocos2d.h"
 #include "Shape.h"
+#include <vector>
 
 const int BOARD_WIDTH = 13;
 const int BOARD_HEIGHT = 26;
@@ -20,13 +21,26 @@ private:
 	float downSpeed;
 	Shape* nextShape;
 	Shape* curShape;
-	Vector<Shape*> shapes;
+	std::vector<int> clearlines;
+	int map[BOARD_WIDTH][BOARD_HEIGHT];
+	Vector<Block*> blocks;
 
 	Shape* createNextShape();
 	void pushNextShape();
-	Vector<Shape*> getShapes() { return shapes; }
 
 	void dropDown(float t);
+	void moveLeft();
+	void moveRight();
+	void moveDown();
+
+	void roateShape();
+
+	bool checkBorder(int type);
+
+	void setMap();
+
+	bool isClear();
+	void blockClear(float t);
 };
 
 #endif

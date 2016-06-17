@@ -23,42 +23,35 @@ bool Shape::init(int type)
 
 	for (int i = 0; i < 4; ++i)
 	{
-		for (int j = 0; j < 4; ++j)
-		{
-			Block* b = Block::create();
-			this->addChild(b);
-			blocks.pushBack(b);
-		}
+		Block* b = Block::create();
+		this->addChild(b);
+		blocks.pushBack(b);
 	}
 
-	dir = Dir::up;
-	this->setBlocks(type);
+	dir = 0;
+	this->type = type;
+	this->setBlocks();
 
 	return true;
 }
 
-void Shape::setBlocks(int type)
+void Shape::setBlocks()
 {
 	int bit = 0x8000;
 	int block = shape_array[type][dir];
 	int row = 0, col = 0;
+	int c = 0;
 
 	for (; bit > 0; bit = bit >> 1)
 	{
 		if (bit & block)
 		{
-			Block* b = blocks.at(row * 4 + col);
+			Block* b = blocks.at(c++);
 			b->setBlockType(type);
 			b->setPosition(BLOCK_SIZE * Vec2(col, 3 - row));
-			b->setRow(6 + col);
-			b->setCol(22 + 3 - row);
+			b->setRow(col);
+			b->setCol(3 - row);
 		}
-		/*else
-		{
-			Block* b = blocks.at(row * 4 + col);
-			b->setBlockType(7);
-			b->setPosition(BLOCK_SIZE * Vec2(col, 3 - row));
-		}*/
 		if (++col == 4)
 		{
 			col = 0;
@@ -67,8 +60,45 @@ void Shape::setBlocks(int type)
 	}
 }
 
-void Shape::moveDown()
+void Shape::dropDown()
 {
 	this->setPosition(BLOCK_SIZE * Vec2(row, col - 1));
 	this->setCol(col - 1);
+}
+
+void Shape::moveLeft()
+{
+	this->setPosition(BLOCK_SIZE * Vec2(row - 1, col));
+	this->setRow(row - 1);
+}
+
+void Shape::moveRight()
+{
+	this->setPosition(BLOCK_SIZE * Vec2(row + 1, col));
+	this->setRow(row + 1);
+}
+
+void Shape::roateShape()
+{
+	dir = (dir + 1) % 4;
+	int bit = 0x8000;
+	int block = shape_array[type][dir];
+	int row = 0, col = 0;
+	int c = 0;
+
+	for (; bit > 0; bit = bit >> 1)
+	{
+		if (bit & block)
+		{
+			Block* b = blocks.at(c++);
+			b->setPosition(BLOCK_SIZE * Vec2(col, 3 - row));
+			b->setRow(col);
+			b->setCol(3 - row);
+		}
+		if (++col == 4)
+		{
+			col = 0;
+			row++;
+		}
+	}
 }

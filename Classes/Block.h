@@ -10,12 +10,6 @@ const int BLOCK_SIZE = 16;
 class Block : public Sprite
 {
 public:
-	enum BlockType
-	{
-		blank,
-		block
-	};
-
 	CREATE_FUNC(Block);
 	virtual bool init();
 
@@ -25,12 +19,12 @@ public:
 	int getCol() const { return col; }
 
 	void setBlockType(int type);
-	BlockType getBlockType() { return type; }
+	int getBlockType() { return type; }
 
 private:
 	int row;							
 	int col;
-	BlockType type;
+	int type;
 };
 
 #endif
