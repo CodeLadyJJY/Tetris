@@ -78,6 +78,37 @@ void Shape::moveRight()
 	this->setRow(row + 1);
 }
 
+bool Shape::canRoate()
+{
+	int temp_dir = (dir + 1) % 4;
+	int bit = 0x8000;
+	int block = shape_array[type][temp_dir];
+	int row = 0, col = 0;
+	int c = 0;
+
+	int fx = this->getRow();
+	int fy = this->getCol();
+
+	for (; bit > 0; bit = bit >> 1)
+	{
+		if (bit & block)
+		{
+			int x = col;
+			int y = 3 - row;
+
+			if (fx + x < 1 || fx + x > (BOARD_WIDTH + 1) || fy + y < 0 || fy + y > BOARD_HEIGHT)
+				return false;
+		}
+		if (++col == 4)
+		{
+			col = 0;
+			row++;
+		}
+	}
+
+	return true;
+}
+
 void Shape::roateShape()
 {
 	dir = (dir + 1) % 4;

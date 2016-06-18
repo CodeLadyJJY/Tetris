@@ -5,12 +5,8 @@
 USING_NS_CC;
 using namespace std;
 
-int g_level;	// game level
-
-Scene* GameScene::createScene(int level)
+Scene* GameScene::createScene()
 {
-	g_level = level;
-
 	auto scene = Scene::create();
 	auto layer = GameScene::create();
 	scene->addChild(layer);
@@ -30,20 +26,34 @@ bool GameScene::init()
 	bg->setPosition(Vec2::ZERO);
 	addChild(bg);
 
-	// add label "score"
-	TTFConfig config("fonts/Marker Felt.ttf", 30); 
+	TTFConfig config("fonts/Marker Felt.ttf", 30);
 
+	// add label "level"
+	m_level = 1;
+	auto labelLevelTitle = Label::createWithTTF(config, "Level");
+	labelLevelTitle->setColor(Color3B::BLACK);
+	labelLevelTitle->setPosition(Vec2(size.width * 6 / 7, size.height * 8 / 13));
+	addChild(labelLevelTitle);
+
+	// add label level
+	auto labelLevel = Label::createWithTTF(config, StringUtils::format("%d", m_level));
+	labelLevel->setTag(110);
+	labelLevel->setColor(Color3B::BLACK);
+	labelLevel->setPosition(Vec2(size.width * 6 / 7, size.height * 7 / 13));
+	addChild(labelLevel);
+
+	// add label "score"
 	auto labelScoreTitle = Label::createWithTTF(config, "Score");
 	labelScoreTitle->setColor(Color3B::BLACK);
-	labelScoreTitle->setPosition(Vec2(size.width * 5 / 6, size.height * 5 / 8));
+	labelScoreTitle->setPosition(Vec2(size.width * 6 / 7, size.height * 6 / 14));
 	addChild(labelScoreTitle);
 
 	// add label score
 	m_score = 0;
 	auto labelScore = Label::createWithTTF(config, "0");
-	labelScore->setTag(110);
+	labelScore->setTag(111);
 	labelScore->setColor(Color3B::BLACK);
-	labelScore->setPosition(Vec2(size.width * 5 / 6, size.height / 2));
+	labelScore->setPosition(Vec2(size.width * 6 / 7, size.height * 5 / 14));
 	addChild(labelScore);
 
 	// add button back and pause
@@ -56,69 +66,82 @@ bool GameScene::init()
 
 	auto menu = Menu::create(menuItemPause, menuItemBack, NULL);
 	menu->setPosition(Vec2::ZERO);
-	menuItemBack->setPosition(Vec2(size.width * 5 / 6, size.height * 2 / 9));
-	menuItemPause->setPosition(Vec2(size.width * 5 / 6, size.height / 9));
+	menuItemBack->setPosition(Vec2(size.width * 6 / 7, size.height * 2 / 9));
+	menuItemPause->setPosition(Vec2(size.width * 6 / 7, size.height / 9));
 	
 	addChild(menu);
 
 	// add keyboard listener
-	auto listener = EventListenerKeyboard::create();
+	listener = EventListenerKeyboard::create();
 
 	listener->onKeyPressed = [&](EventKeyboard::KeyCode k, Event * e){
-		switch (k)
+		if (curShape)
 		{
-		case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
-			moveLeft();
-			break;
-		case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
-			moveRight();
-			break;
-		case EventKeyboard::KeyCode::KEY_UP_ARROW:
-			roateShape();
-			break;
-		case EventKeyboard::KeyCode::KEY_DOWN_ARROW:
-			moveDown();
-			break;
-		default:
-			break;
+			switch (k)
+			{
+			case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
+				moveLeft();
+				break;
+			case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
+				moveRight();
+				break;
+			case EventKeyboard::KeyCode::KEY_UP_ARROW:
+				roateShape();
+				break;
+			case EventKeyboard::KeyCode::KEY_DOWN_ARROW:
+				moveDown();
+				break;
+			default:
+				break;
+			}
 		}
 	};
 
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
+	// init
+	m_lines = 0;
+	m_speed = 1.0f;
+
 	// game start
-	nextShape = createNextShape();
-	pushNextShape();
+	createNextShape();
+	scheduleOnce(schedule_selector(GameScene::pushNextShape), 0.1f);
 
 	return true;
 }
 
 // create a random shape
-Shape* GameScene::createNextShape()
+void GameScene::createNextShape()
 {
 	srand(time(NULL));
 	int type = rand() % 7;
 
 	auto s = Shape::create(type);
-	s->setPosition(BLOCK_SIZE * Vec2(17, 22));
+	s->setPosition(BLOCK_SIZE * Vec2(17, 23));
 	addChild(s);
 
-	return s;
+	nextShape = s;
 }
 
 // push next shape in the screen
-void GameScene::pushNextShape()
+void GameScene::pushNextShape(float t)
 {
 	curShape = nextShape;
-	curShape->setPosition(BLOCK_SIZE * Vec2(6, 22));
+	curShape->setPosition(BLOCK_SIZE * Vec2(6, 24));
 	curShape->setRow(6);
-	curShape->setCol(22);
+	curShape->setCol(24);
+
+	createNextShape();
+
+	if (isGameOver())
+	{
+		gameOver();
+		return;
+	}
 
 	// down the current shape
-	downSpeed = 0.2f;
-	schedule(schedule_selector(GameScene::dropDown), downSpeed);
-
-	nextShape = createNextShape();
+	log("%f", m_speed);
+	schedule(schedule_selector(GameScene::dropDown), m_speed);
 }
 
 void GameScene::dropDown(float t)
@@ -129,9 +152,13 @@ void GameScene::dropDown(float t)
 	{
 		unschedule(schedule_selector(GameScene::dropDown));
 		setMap();
-		if (isClear())
-			scheduleOnce(schedule_selector(GameScene::blockClear), 0.0f);
-		pushNextShape();
+		int num = calClearNum();
+		if (num > 0)
+		{
+			blockClear();
+			addScore(num);
+		}
+		scheduleOnce(schedule_selector(GameScene::pushNextShape), 0.1f);
 	}
 }
 
@@ -155,7 +182,8 @@ void GameScene::moveDown()
 
 void GameScene::roateShape()
 {
-	curShape->roateShape();
+	if(curShape->canRoate())
+		curShape->roateShape();
 }
 
 bool GameScene::checkBorder(int type)
@@ -221,7 +249,7 @@ void GameScene::setMap()
 	curShape = nullptr;
 }
 
-bool GameScene::isClear()
+int GameScene::calClearNum()
 {
 	// calculate clear lines
 	for (int j = 0; j < BOARD_HEIGHT; ++j)
@@ -240,13 +268,10 @@ bool GameScene::isClear()
 			clearlines.push_back(j);
 	}
 
-	if (clearlines.size() > 0)
-		return true;
-
-	return false;
+	return clearlines.size();
 }
 
-void GameScene::blockClear(float t)
+void GameScene::blockClear()
 {
 	for (int t = 0; t < clearlines.size(); ++t)
 	{
@@ -301,6 +326,110 @@ void GameScene::blockClear(float t)
 	}
 
 	clearlines.clear();
+}
+
+void GameScene::addScore(int num)
+{
+	// add score
+	switch (num)
+	{
+	case 1:
+		m_score += 40 * (m_level + 1);
+		break;
+	case 2:
+		m_score += 100 * (m_level + 1);
+		break;
+	case 3:
+		m_score += 300 * (m_level + 1);
+		break;
+	case 4:
+		m_score += 1200 * (m_level + 1);
+		break;
+	default:
+		break;
+	}
+
+	Label* label = (Label*)this->getChildByTag(111);
+	label->setString(StringUtils::format("%d", m_score));
+
+	// add level
+	m_lines += num;
+	if (m_lines / 10 >= m_level && m_lines / 10 < 10)
+	{
+		m_level++;
+	}
+
+	label = (Label*)this->getChildByTag(110);
+	label->setString(StringUtils::format("%d", m_level));
+
+	// add speed
+	switch (m_level)
+	{
+	case 1:
+		m_speed = 1.0f;
+		break;
+	case 2:
+		m_speed = 0.8f;
+		break;
+	case 3:
+		m_speed = 0.6f;
+		break;
+	case 4:
+		m_speed = 0.4f;
+		break;
+	case 5:
+		m_speed = 0.2f;
+		break;
+	case 6:
+		m_speed = 0.1f;
+		break;
+	case 7:
+		m_speed = 0.05f;
+		break;
+	case 8:
+		m_speed = 0.01f;
+		break;
+	case 9:
+		m_speed = 0.005f;
+		break;
+	case 10:
+		m_speed = 0.0001f;
+		break;
+	default:
+		break;
+	}
+}
+
+bool GameScene::isGameOver()
+{
+	int fx = curShape->getRow();
+	int fy = curShape->getCol();
+
+	auto bs = curShape->getBlocks();
+
+	for (auto b : bs)
+	{
+		int x = b->getRow();
+		int y = b->getCol();
+
+		if (map[fx + x - 1][fy + y])
+			return true;
+	}
+	return false;
+}
+
+void GameScene::gameOver()
+{
+	auto size = Director::getInstance()->getWinSize();
+
+	//show label "game over"
+	auto label = Label::createWithSystemFont("GAME OVER", "Arial", 50);
+	label->setPosition(size / 2);
+	label->setColor(Color3B::RED);
+	addChild(label, 3);
+
+	this->unscheduleAllSelectors();
+	_eventDispatcher->removeEventListener(listener);
 }
 
 // go back to main menu or pause

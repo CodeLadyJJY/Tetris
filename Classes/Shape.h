@@ -6,6 +6,9 @@
 
 USING_NS_CC;
 
+const int BOARD_WIDTH = 13;
+const int BOARD_HEIGHT = 28;
+
 const int shape_array[7][4] = {
 	{0x0F00, 0x2222, 0x00F0, 0x4444},
 	{0x44C0, 0x8E00, 0x6440, 0x0E20},
@@ -34,6 +37,7 @@ public:
 	void moveLeft();
 	void moveRight();
 
+	bool canRoate();
 	void roateShape();
 
 private:

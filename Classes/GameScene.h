@@ -5,28 +5,28 @@
 #include "Shape.h"
 #include <vector>
 
-const int BOARD_WIDTH = 13;
-const int BOARD_HEIGHT = 26;
-
 class GameScene : public cocos2d::Layer
 {
 public:
-	static cocos2d::Scene* createScene(int level);
+	static cocos2d::Scene* createScene();
 	virtual bool init();
 	CREATE_FUNC(GameScene);
 	void menuCallBack(cocos2d::Ref* obj);
 
 private:
 	int m_score;
-	float downSpeed;
+	int m_level;
+	int m_lines;
+	float m_speed;
 	Shape* nextShape;
 	Shape* curShape;
 	std::vector<int> clearlines;
 	int map[BOARD_WIDTH][BOARD_HEIGHT];
 	Vector<Block*> blocks;
+	EventListenerKeyboard* listener;
 
-	Shape* createNextShape();
-	void pushNextShape();
+	void createNextShape();
+	void pushNextShape(float t);
 
 	void dropDown(float t);
 	void moveLeft();
@@ -39,8 +39,13 @@ private:
 
 	void setMap();
 
-	bool isClear();
-	void blockClear(float t);
+	int calClearNum();
+	void blockClear();
+
+	void addScore(int num);
+
+	bool isGameOver();
+	void gameOver();
 };
 
 #endif
